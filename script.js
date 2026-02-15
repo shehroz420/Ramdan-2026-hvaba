@@ -1,5 +1,5 @@
 ```javascript
-// RAMADAN 2026 - OPTIMIZED VERSION (FIXED FOR FEB-MAR)
+// RAMADAN 2026 - WITH TIMEOUT & FALLBACK
 const CONFIG = {
     city: 'Karachi',
     country: 'Pakistan',
@@ -9,17 +9,46 @@ const CONFIG = {
     calculationMethod: 1
 };
 
+// BACKUP TIMINGS (if API fails)
+const BACKUP_TIMINGS = [
+    {day:1,hijriDay:1,hijriMonth:'Ramadan',gregorianDay:18,gregorianMonth:'February',gregorianYear:2026,sehri:'05:10',iftar:'06:28'},
+    {day:2,hijriDay:2,hijriMonth:'Ramadan',gregorianDay:19,gregorianMonth:'February',gregorianYear:2026,sehri:'05:09',iftar:'06:29'},
+    {day:3,hijriDay:3,hijriMonth:'Ramadan',gregorianDay:20,gregorianMonth:'February',gregorianYear:2026,sehri:'05:08',iftar:'06:29'},
+    {day:4,hijriDay:4,hijriMonth:'Ramadan',gregorianDay:21,gregorianMonth:'February',gregorianYear:2026,sehri:'05:07',iftar:'06:30'},
+    {day:5,hijriDay:5,hijriMonth:'Ramadan',gregorianDay:22,gregorianMonth:'February',gregorianYear:2026,sehri:'05:06',iftar:'06:30'},
+    {day:6,hijriDay:6,hijriMonth:'Ramadan',gregorianDay:23,gregorianMonth:'February',gregorianYear:2026,sehri:'05:05',iftar:'06:31'},
+    {day:7,hijriDay:7,hijriMonth:'Ramadan',gregorianDay:24,gregorianMonth:'February',gregorianYear:2026,sehri:'05:04',iftar:'06:31'},
+    {day:8,hijriDay:8,hijriMonth:'Ramadan',gregorianDay:25,gregorianMonth:'February',gregorianYear:2026,sehri:'05:03',iftar:'06:32'},
+    {day:9,hijriDay:9,hijriMonth:'Ramadan',gregorianDay:26,gregorianMonth:'February',gregorianYear:2026,sehri:'05:02',iftar:'06:32'},
+    {day:10,hijriDay:10,hijriMonth:'Ramadan',gregorianDay:27,gregorianMonth:'February',gregorianYear:2026,sehri:'05:01',iftar:'06:33'},
+    {day:11,hijriDay:11,hijriMonth:'Ramadan',gregorianDay:28,gregorianMonth:'February',gregorianYear:2026,sehri:'05:00',iftar:'06:33'},
+    {day:12,hijriDay:12,hijriMonth:'Ramadan',gregorianDay:1,gregorianMonth:'March',gregorianYear:2026,sehri:'04:59',iftar:'06:34'},
+    {day:13,hijriDay:13,hijriMonth:'Ramadan',gregorianDay:2,gregorianMonth:'March',gregorianYear:2026,sehri:'04:58',iftar:'06:34'},
+    {day:14,hijriDay:14,hijriMonth:'Ramadan',gregorianDay:3,gregorianMonth:'March',gregorianYear:2026,sehri:'04:57',iftar:'06:35'},
+    {day:15,hijriDay:15,hijriMonth:'Ramadan',gregorianDay:4,gregorianMonth:'March',gregorianYear:2026,sehri:'04:56',iftar:'06:35'},
+    {day:16,hijriDay:16,hijriMonth:'Ramadan',gregorianDay:5,gregorianMonth:'March',gregorianYear:2026,sehri:'04:55',iftar:'06:36'},
+    {day:17,hijriDay:17,hijriMonth:'Ramadan',gregorianDay:6,gregorianMonth:'March',gregorianYear:2026,sehri:'04:54',iftar:'06:36'},
+    {day:18,hijriDay:18,hijriMonth:'Ramadan',gregorianDay:7,gregorianMonth:'March',gregorianYear:2026,sehri:'04:53',iftar:'06:37'},
+    {day:19,hijriDay:19,hijriMonth:'Ramadan',gregorianDay:8,gregorianMonth:'March',gregorianYear:2026,sehri:'04:52',iftar:'06:37'},
+    {day:20,hijriDay:20,hijriMonth:'Ramadan',gregorianDay:9,gregorianMonth:'March',gregorianYear:2026,sehri:'04:51',iftar:'06:38'},
+    {day:21,hijriDay:21,hijriMonth:'Ramadan',gregorianDay:10,gregorianMonth:'March',gregorianYear:2026,sehri:'04:50',iftar:'06:38'},
+    {day:22,hijriDay:22,hijriMonth:'Ramadan',gregorianDay:11,gregorianMonth:'March',gregorianYear:2026,sehri:'04:49',iftar:'06:39'},
+    {day:23,hijriDay:23,hijriMonth:'Ramadan',gregorianDay:12,gregorianMonth:'March',gregorianYear:2026,sehri:'04:48',iftar:'06:39'},
+    {day:24,hijriDay:24,hijriMonth:'Ramadan',gregorianDay:13,gregorianMonth:'March',gregorianYear:2026,sehri:'04:47',iftar:'06:40'},
+    {day:25,hijriDay:25,hijriMonth:'Ramadan',gregorianDay:14,gregorianMonth:'March',gregorianYear:2026,sehri:'04:46',iftar:'06:40'},
+    {day:26,hijriDay:26,hijriMonth:'Ramadan',gregorianDay:15,gregorianMonth:'March',gregorianYear:2026,sehri:'04:45',iftar:'06:41'},
+    {day:27,hijriDay:27,hijriMonth:'Ramadan',gregorianDay:16,gregorianMonth:'March',gregorianYear:2026,sehri:'04:44',iftar:'06:41'},
+    {day:28,hijriDay:28,hijriMonth:'Ramadan',gregorianDay:17,gregorianMonth:'March',gregorianYear:2026,sehri:'04:43',iftar:'06:42'},
+    {day:29,hijriDay:29,hijriMonth:'Ramadan',gregorianDay:18,gregorianMonth:'March',gregorianYear:2026,sehri:'04:42',iftar:'06:42'},
+    {day:30,hijriDay:30,hijriMonth:'Ramadan',gregorianDay:19,gregorianMonth:'March',gregorianYear:2026,sehri:'04:41',iftar:'06:43'}
+];
+
 let ramadanTimings = [];
 let currentRamadanDay = 0;
 let countdownInterval = null;
 
-// Permanent dark mode
 function initTheme() {
     document.documentElement.setAttribute('data-theme', 'dark');
-}
-
-function toggleTheme() {
-    // Disabled - permanent dark
 }
 
 function getCurrentPKTDate() {
@@ -29,30 +58,40 @@ function getCurrentPKTDate() {
     return new Date(utc + (pktOffset * 60000));
 }
 
-// OPTIMIZED: Fetch Feb + March in 2 calls (Ramadan spans both months)
+// Fetch with timeout
+async function fetchWithTimeout(url, timeout = 5000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
 async function fetchMonthTimings() {
     try {
-        console.log('Fetching all timings...');
+        console.log('Trying API...');
         
-        // Fetch February 2026
         const urlFeb = `https://api.aladhan.com/v1/calendar/2026/2?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
-        const responseFeb = await fetch(urlFeb);
-        const dataFeb = await responseFeb.json();
-        
-        // Fetch March 2026
         const urlMar = `https://api.aladhan.com/v1/calendar/2026/3?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
-        const responseMar = await fetch(urlMar);
+        
+        const responseFeb = await fetchWithTimeout(urlFeb, 5000);
+        const responseMar = await fetchWithTimeout(urlMar, 5000);
+        
+        const dataFeb = await responseFeb.json();
         const dataMar = await responseMar.json();
         
         if (dataFeb.code === 200 && dataMar.code === 200) {
-            // Ramadan: 18 Feb (index 17) to 19 March
-            // Get last 11 days of Feb (18-28) + first 19 days of March (1-19)
-            const febDays = dataFeb.data.slice(17); // 18 Feb onwards
-            const marDays = dataMar.data.slice(0, 19); // 1-19 March
+            const febDays = dataFeb.data.slice(17);
+            const marDays = dataMar.data.slice(0, 19);
+            const allDays = [...febDays, ...marDays];
             
-            const allRamadanDays = [...febDays, ...marDays];
-            
-            ramadanTimings = allRamadanDays.map((day, index) => ({
+            ramadanTimings = allDays.map((day, index) => ({
                 day: index + 1,
                 gregorianDay: day.date.gregorian.day,
                 gregorianMonth: day.date.gregorian.month.en,
@@ -64,12 +103,12 @@ async function fetchMonthTimings() {
                 iftar: day.timings.Maghrib,
             }));
             
-            console.log(`✅ Loaded ${ramadanTimings.length} days from API!`);
+            console.log('✅ API loaded!');
             return true;
         }
         return false;
     } catch (error) {
-        console.error('Error:', error);
+        console.log('⚠️ API timeout/failed, using backup');
         return false;
     }
 }
@@ -112,18 +151,13 @@ function updateCurrentDayDisplay() {
         dayEl.textContent = currentRamadanDay;
         const timing = ramadanTimings[currentRamadanDay - 1];
         if (timing) {
-            hijriEl.textContent = timing.hijriDate;
+            hijriEl.textContent = `${timing.hijriDay} ${timing.hijriMonth} 1447`;
             gregorianEl.textContent = `${timing.gregorianDay} ${timing.gregorianMonth} ${timing.gregorianYear}`;
             statusEl.textContent = `Day ${currentRamadanDay} of Ramadan`;
             document.getElementById('todaySehri').textContent = formatTime(timing.sehri);
             document.getElementById('todayIftar').textContent = formatTime(timing.iftar);
             document.getElementById('todayTimingsSection').style.display = 'block';
         }
-    } else {
-        dayEl.textContent = '✓';
-        hijriEl.textContent = 'Ramadan Complete';
-        statusEl.textContent = 'Eid Mubarak!';
-        document.getElementById('todayTimingsSection').style.display = 'none';
     }
 }
 
@@ -148,22 +182,12 @@ function updateCountdown() {
         document.getElementById('hours').textContent = String(hours).padStart(2, '0');
         document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
         document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-        document.getElementById('countdownMessage').textContent = 'Ramadan starts Wednesday, 18 Feb 2026!';
     }
 }
 
 function populateTimetable() {
     const tbody = document.getElementById('timetableBody');
     tbody.innerHTML = '';
-    
-    if (ramadanTimings.length === 0) {
-        tbody.innerHTML = `
-            <tr><td colspan="5" style="text-align: center; padding: 30px;">
-                Loading timings...
-            </td></tr>
-        `;
-        return;
-    }
     
     ramadanTimings.forEach(timing => {
         const row = document.createElement('tr');
@@ -189,45 +213,38 @@ function formatTime(time24) {
 }
 
 async function initializeApp() {
-    console.log('🌙 Ramadan 2026 - Fast Loading...');
+    console.log('🌙 Loading...');
     
     initTheme();
     document.getElementById('cityName').textContent = `${CONFIG.city}, ${CONFIG.country}`;
     
-    // Show loading
     const tbody = document.getElementById('timetableBody');
-    tbody.innerHTML = `
-        <tr><td colspan="5" style="text-align: center; padding: 40px;">
-            <div class="loader"></div>
-            Fetching prayer timings from API...
-        </td></tr>
-    `;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px;"><div class="loader"></div>Loading...</td></tr>`;
     
     try {
-        // Fetch Feb + March (only 2 API calls - FAST!)
-        const success = await fetchMonthTimings();
+        const apiSuccess = await fetchMonthTimings();
         
-        if (success && ramadanTimings.length === 30) {
-            updateCurrentDayDisplay();
-            populateTimetable();
-            startCountdown();
-            console.log('✅ Done! All 30 days loaded!');
-        } else {
-            throw new Error('Failed to load timings');
+        if (!apiSuccess || ramadanTimings.length !== 30) {
+            console.log('Using backup timings');
+            ramadanTimings = BACKUP_TIMINGS;
         }
+        
+        updateCurrentDayDisplay();
+        populateTimetable();
+        startCountdown();
+        console.log('✅ Done!');
     } catch (error) {
-        console.error('Error:', error);
-        tbody.innerHTML = `
-            <tr><td colspan="5" style="text-align: center; padding: 30px; color: #ff6b6b;">
-                Failed to load timings. Please refresh the page.
-            </td></tr>
-        `;
+        console.log('Using backup');
+        ramadanTimings = BACKUP_TIMINGS;
+        updateCurrentDayDisplay();
+        populateTimetable();
+        startCountdown();
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('themeToggle');
-    if (toggle) toggle.style.display = 'none'; // Hide toggle
+    if (toggle) toggle.style.display = 'none';
     initializeApp();
 });
 ```
