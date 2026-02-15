@@ -1,5 +1,9 @@
+### **JavaScript Replace Karo - Optimized Version:**
+
+Yeh **script.js** mein paste karo (poori file replace):
+
 ```javascript
-// RAMADAN 2026 - WORKING VERSION
+// RAMADAN 2026 - OPTIMIZED VERSION (FAST LOADING)
 const CONFIG = {
     city: 'Karachi',
     country: 'Pakistan',
@@ -13,62 +17,60 @@ let ramadanTimings = [];
 let currentRamadanDay = 0;
 let countdownInterval = null;
 
-function getCurrentPKTDate() {
-    const now = new Date();
-    const pktOffset = 5 * 60; // PKT is UTC+5
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    return new Date(utc + (pktOffset * 60000));
-}
-
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    {
-// PERMANENT DARK MODE - NO TOGGLE
+// Permanent dark mode
 function initTheme() {
     document.documentElement.setAttribute('data-theme', 'dark');
 }
 
 function toggleTheme() {
-    // Theme toggle disabled - permanent dark mode
+    // Disabled - permanent dark
 }
 
-async function fetchPrayerTimes(date) {
+function getCurrentPKTDate() {
+    const now = new Date();
+    const pktOffset = 5 * 60;
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    return new Date(utc + (pktOffset * 60000));
+}
+
+// OPTIMIZED: Fetch multiple days in one month request
+async function fetchMonthTimings() {
     try {
-        const timestamp = Math.floor(date.getTime() / 1000);
-        const url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
+        const startDate = new Date(CONFIG.ramadanStartDate);
+        const month = startDate.getMonth() + 1;
+        const year = startDate.getFullYear();
+        
+        // Get whole month at once - much faster!
+        const url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
+        
+        console.log('Fetching all timings at once...');
         const response = await fetch(url);
         const data = await response.json();
-        return data.code === 200 ? data.data : null;
+        
+        if (data.code === 200 && data.data) {
+            // Extract only Ramadan days (30 days from start)
+            const startDay = startDate.getDate();
+            const ramadanData = data.data.slice(startDay - 1, startDay + 29);
+            
+            ramadanTimings = ramadanData.map((day, index) => ({
+                day: index + 1,
+                gregorianDay: day.date.gregorian.day,
+                gregorianMonth: day.date.gregorian.month.en,
+                gregorianYear: day.date.gregorian.year,
+                hijriDate: `${day.date.hijri.day} ${day.date.hijri.month.en} ${day.date.hijri.year}`,
+                hijriDay: day.date.hijri.day,
+                hijriMonth: day.date.hijri.month.en,
+                sehri: day.timings.Fajr,
+                iftar: day.timings.Maghrib,
+            }));
+            
+            console.log(`✅ Loaded all 30 days instantly!`);
+            return true;
+        }
+        return false;
     } catch (error) {
         console.error('Error:', error);
-        return null;
-    }
-}
-
-async function calculateRamadanTimings() {
-    ramadanTimings = [];
-    const startDate = new Date(CONFIG.ramadanStartDate);
-    
-    for (let day = 0; day < 30; day++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + day);
-        const prayerData = await fetchPrayerTimes(currentDate);
-        
-        if (prayerData) {
-            ramadanTimings.push({
-                day: day + 1,
-                gregorianDay: prayerData.date.gregorian.day,
-                gregorianMonth: prayerData.date.gregorian.month.en,
-                gregorianYear: prayerData.date.gregorian.year,
-                hijriDate: `${prayerData.date.hijri.day} ${prayerData.date.hijri.month.en} ${prayerData.date.hijri.year}`,
-                hijriDay: prayerData.date.hijri.day,
-                hijriMonth: prayerData.date.hijri.month.en,
-                sehri: prayerData.timings.Fajr,
-                iftar: prayerData.timings.Maghrib,
-            });
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        return false;
     }
 }
 
@@ -91,6 +93,13 @@ function updateCurrentDayDisplay() {
     const hijriEl = document.getElementById('hijriDate');
     const gregorianEl = document.getElementById('gregorianDate');
     const statusEl = document.getElementById('statusText');
+    const todayDateEl = document.getElementById('todayDate');
+    
+    if (todayDateEl) {
+        todayDateEl.textContent = now.toLocaleDateString('en-GB', { 
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+        });
+    }
     
     if (currentRamadanDay === 0) {
         const daysUntil = Math.ceil((CONFIG.ramadanStartDate - now) / (1000 * 60 * 60 * 24));
@@ -98,14 +107,23 @@ function updateCurrentDayDisplay() {
         hijriEl.textContent = 'Ramadan 1447 AH';
         gregorianEl.textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
         statusEl.textContent = `Ramadan starts in ${daysUntil} days`;
-    } else if (currentRamadanDay > 0) {
+        document.getElementById('todayTimingsSection').style.display = 'none';
+    } else if (currentRamadanDay > 0 && currentRamadanDay <= 30) {
         dayEl.textContent = currentRamadanDay;
-        const timing = ramadanTimings.find(t => t.day === currentRamadanDay);
+        const timing = ramadanTimings[currentRamadanDay - 1];
         if (timing) {
             hijriEl.textContent = timing.hijriDate;
             gregorianEl.textContent = `${timing.gregorianDay} ${timing.gregorianMonth} ${timing.gregorianYear}`;
             statusEl.textContent = `Day ${currentRamadanDay} of Ramadan`;
+            document.getElementById('todaySehri').textContent = formatTime(timing.sehri);
+            document.getElementById('todayIftar').textContent = formatTime(timing.iftar);
+            document.getElementById('todayTimingsSection').style.display = 'block';
         }
+    } else {
+        dayEl.textContent = '✓';
+        hijriEl.textContent = 'Ramadan Complete';
+        statusEl.textContent = 'Eid Mubarak!';
+        document.getElementById('todayTimingsSection').style.display = 'none';
     }
 }
 
@@ -120,7 +138,7 @@ function updateCountdown() {
     const targetTime = new Date(CONFIG.ramadanStartDate);
     const timeDiff = targetTime - now;
     
-    if (timeDiff > 0) {
+    if (timeDiff > 0 && currentRamadanDay === 0) {
         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
@@ -130,6 +148,7 @@ function updateCountdown() {
         document.getElementById('hours').textContent = String(hours).padStart(2, '0');
         document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
         document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+        document.getElementById('countdownMessage').textContent = 'Ramadan starts Wednesday, 18 Feb 2026!';
     }
 }
 
@@ -161,26 +180,36 @@ function formatTime(time24) {
 }
 
 async function initializeApp() {
+    console.log('🌙 Ramadan 2026 - Fast Loading...');
+    
     initTheme();
-    document.body.classList.add('loading');
+    document.getElementById('cityName').textContent = `${CONFIG.city}, ${CONFIG.country}`;
     
     try {
-        await calculateRamadanTimings();
-        updateCurrentDayDisplay();
-        populateTimetable();
-        startCountdown();
+        // Fetch all 30 days at once - SUPER FAST!
+        const success = await fetchMonthTimings();
+        
+        if (success) {
+            updateCurrentDayDisplay();
+            populateTimetable();
+            startCountdown();
+            console.log('✅ Done! All loaded instantly!');
+        } else {
+            throw new Error('Failed to load timings');
+        }
     } catch (error) {
         console.error('Error:', error);
-    } finally {
-        document.body.classList.remove('loading');
+        document.getElementById('timetableBody').innerHTML = `
+            <tr><td colspan="5" style="text-align: center; padding: 30px; color: #ff6b6b;">
+                Failed to load timings. Please refresh the page.
+            </td></tr>
+        `;
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('themeToggle');
-    if (toggle) {
-        toggle.addEventListener('click', toggleTheme);
-    }
+    if (toggle) toggle.style.display = 'none'; // Hide toggle
     initializeApp();
 });
 ```
