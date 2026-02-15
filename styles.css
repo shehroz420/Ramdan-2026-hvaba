@@ -963,3 +963,9 @@ body {
     background: #0a0e27 !important;
     color: #f0f0f0 !important;
 }
+
+/* Hide theme toggle permanently */
+.theme-toggle {
+    display: none !important;
+    visibility: hidden !important;
+}
