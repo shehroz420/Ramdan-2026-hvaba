@@ -1,6 +1,6 @@
 ```css
 /* ===========================
-   Ramadan 2026 - Beautiful CSS
+   Ramadan 2026 - Beautiful CSS - FIXED
    ===========================*/
 
 /* Variables */
@@ -412,11 +412,12 @@ body {
 .day-number {
     font-size: 4rem;
     font-weight: 700;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #b8860b !important;
     line-height: 1;
+}
+
+[data-theme="dark"] .day-number {
+    color: #ffd700 !important;
 }
 
 .day-total {
@@ -499,14 +500,15 @@ body {
 .time-value {
     font-size: 4.5rem;
     font-weight: 700;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #b8860b !important;
     min-width: 120px;
     text-align: center;
     line-height: 1;
     font-family: 'Cairo', sans-serif;
+}
+
+[data-theme="dark"] .time-value {
+    color: #ffd700 !important;
 }
 
 .time-label {
@@ -623,12 +625,13 @@ body {
 .timing-time {
     font-size: 3rem;
     font-weight: 700;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #b8860b !important;
     margin-bottom: 12px;
     line-height: 1;
+}
+
+[data-theme="dark"] .timing-time {
+    color: #ffd700 !important;
 }
 
 .timing-label {
@@ -941,3 +944,4 @@ body {
 * {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
+```
