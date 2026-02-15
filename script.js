@@ -1,9 +1,5 @@
-### **JavaScript Replace Karo - Optimized Version:**
-
-Yeh **script.js** mein paste karo (poori file replace):
-
 ```javascript
-// RAMADAN 2026 - OPTIMIZED VERSION (FAST LOADING)
+// RAMADAN 2026 - OPTIMIZED VERSION (FIXED FOR FEB-MAR)
 const CONFIG = {
     city: 'Karachi',
     country: 'Pakistan',
@@ -33,26 +29,30 @@ function getCurrentPKTDate() {
     return new Date(utc + (pktOffset * 60000));
 }
 
-// OPTIMIZED: Fetch multiple days in one month request
+// OPTIMIZED: Fetch Feb + March in 2 calls (Ramadan spans both months)
 async function fetchMonthTimings() {
     try {
-        const startDate = new Date(CONFIG.ramadanStartDate);
-        const month = startDate.getMonth() + 1;
-        const year = startDate.getFullYear();
+        console.log('Fetching all timings...');
         
-        // Get whole month at once - much faster!
-        const url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
+        // Fetch February 2026
+        const urlFeb = `https://api.aladhan.com/v1/calendar/2026/2?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
+        const responseFeb = await fetch(urlFeb);
+        const dataFeb = await responseFeb.json();
         
-        console.log('Fetching all timings at once...');
-        const response = await fetch(url);
-        const data = await response.json();
+        // Fetch March 2026
+        const urlMar = `https://api.aladhan.com/v1/calendar/2026/3?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&method=${CONFIG.calculationMethod}`;
+        const responseMar = await fetch(urlMar);
+        const dataMar = await responseMar.json();
         
-        if (data.code === 200 && data.data) {
-            // Extract only Ramadan days (30 days from start)
-            const startDay = startDate.getDate();
-            const ramadanData = data.data.slice(startDay - 1, startDay + 29);
+        if (dataFeb.code === 200 && dataMar.code === 200) {
+            // Ramadan: 18 Feb (index 17) to 19 March
+            // Get last 11 days of Feb (18-28) + first 19 days of March (1-19)
+            const febDays = dataFeb.data.slice(17); // 18 Feb onwards
+            const marDays = dataMar.data.slice(0, 19); // 1-19 March
             
-            ramadanTimings = ramadanData.map((day, index) => ({
+            const allRamadanDays = [...febDays, ...marDays];
+            
+            ramadanTimings = allRamadanDays.map((day, index) => ({
                 day: index + 1,
                 gregorianDay: day.date.gregorian.day,
                 gregorianMonth: day.date.gregorian.month.en,
@@ -64,7 +64,7 @@ async function fetchMonthTimings() {
                 iftar: day.timings.Maghrib,
             }));
             
-            console.log(`✅ Loaded all 30 days instantly!`);
+            console.log(`✅ Loaded ${ramadanTimings.length} days from API!`);
             return true;
         }
         return false;
@@ -156,6 +156,15 @@ function populateTimetable() {
     const tbody = document.getElementById('timetableBody');
     tbody.innerHTML = '';
     
+    if (ramadanTimings.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="5" style="text-align: center; padding: 30px;">
+                Loading timings...
+            </td></tr>
+        `;
+        return;
+    }
+    
     ramadanTimings.forEach(timing => {
         const row = document.createElement('tr');
         if (timing.day === currentRamadanDay) row.classList.add('current-day');
@@ -185,21 +194,30 @@ async function initializeApp() {
     initTheme();
     document.getElementById('cityName').textContent = `${CONFIG.city}, ${CONFIG.country}`;
     
+    // Show loading
+    const tbody = document.getElementById('timetableBody');
+    tbody.innerHTML = `
+        <tr><td colspan="5" style="text-align: center; padding: 40px;">
+            <div class="loader"></div>
+            Fetching prayer timings from API...
+        </td></tr>
+    `;
+    
     try {
-        // Fetch all 30 days at once - SUPER FAST!
+        // Fetch Feb + March (only 2 API calls - FAST!)
         const success = await fetchMonthTimings();
         
-        if (success) {
+        if (success && ramadanTimings.length === 30) {
             updateCurrentDayDisplay();
             populateTimetable();
             startCountdown();
-            console.log('✅ Done! All loaded instantly!');
+            console.log('✅ Done! All 30 days loaded!');
         } else {
             throw new Error('Failed to load timings');
         }
     } catch (error) {
         console.error('Error:', error);
-        document.getElementById('timetableBody').innerHTML = `
+        tbody.innerHTML = `
             <tr><td colspan="5" style="text-align: center; padding: 30px; color: #ff6b6b;">
                 Failed to load timings. Please refresh the page.
             </td></tr>
