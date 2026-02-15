@@ -11,7 +11,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>">
 </head>
 <body>
-    <!-- Ramadan Background Images -->
+    <!-- Ramadan Background -->
     <div class="background-layer">
         <div class="mosque-silhouette"></div>
         <div class="stars-layer"></div>
@@ -34,7 +34,7 @@
         <div class="islamic-pattern pattern-1"></div>
         <div class="islamic-pattern pattern-2"></div>
     </div>
-    
+
     <!-- Main Container -->
     <div class="container">
         <!-- Header -->
@@ -51,7 +51,7 @@
                 </div>
                 <div class="status-badge" id="statusBadge">
                     <span class="badge-icon">⏳</span>
-                    <span id="statusText">Loading status...</span>
+                    <span id="statusText">Ramadan starts in 4 days</span>
                 </div>
             </div>
         </header>
@@ -61,11 +61,11 @@
             <div class="current-day-card">
                 <div class="ramadan-day">
                     <span class="day-label">Ramadan Day</span>
-                    <span class="day-number" id="currentRamadanDay">--</span>
+                    <span class="day-number" id="currentRamadanDay">⏳</span>
                     <span class="day-total">/ 30</span>
                 </div>
                 <div class="date-info">
-                    <div class="hijri-date" id="hijriDate">Loading...</div>
+                    <div class="hijri-date" id="hijriDate">Ramadan 1447 AH</div>
                     <div class="gregorian-date" id="gregorianDate">14 February 2026</div>
                 </div>
             </div>
@@ -99,12 +99,12 @@
                         <span class="time-label">Seconds</span>
                     </div>
                 </div>
-                <div class="countdown-message" id="countdownMessage"></div>
+                <div class="countdown-message" id="countdownMessage">Ramadan starts Wednesday, 18 Feb 2026!</div>
             </div>
         </section>
 
         <!-- Today's Timings -->
-        <section class="today-timings" id="todayTimingsSection">
+        <section class="today-timings" id="todayTimingsSection" style="display:none;">
             <div class="timing-cards">
                 <div class="timing-card sehri-card">
                     <div class="card-header">
@@ -148,12 +148,7 @@
                         </tr>
                     </thead>
                     <tbody id="timetableBody">
-                        <tr class="loading-row">
-                            <td colspan="5" style="text-align: center; padding: 40px;">
-                                <div class="loader"></div>
-                                Loading prayer timings from Aladhan API...
-                            </td>
-                        </tr>
+                        <!-- JavaScript will populate this -->
                     </tbody>
                 </table>
             </div>
@@ -165,6 +160,7 @@
                 <h3>📌 Important Information</h3>
                 <ul>
                     <li>✅ Ramadan 2026 begins on <strong>Wednesday, 18 February 2026</strong></li>
+                    <li>✅ Today's date is <strong id="todayDate">Friday, 14 February 2026</strong></li>
                     <li>✅ All timings are calculated for <strong>Karachi, Pakistan</strong></li>
                     <li>✅ Sehri time = Fajr prayer time (last time to eat)</li>
                     <li>✅ Iftar time = Maghrib prayer time (time to break fast)</li>
@@ -186,4 +182,3 @@
 
     <script src="script.js"></script>
 </body>
-</html>
